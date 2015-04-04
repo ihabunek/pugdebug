@@ -9,12 +9,16 @@
 
 __author__ = "robertbasic"
 
-from PyQt5.QtWidgets import QMainWindow, QGridLayout, QWidget, QToolBar
+from PyQt5.QtWidgets import QMainWindow, QGridLayout, QWidget, QDockWidget, QToolBar
 from PyQt5.QtGui import QFont
+from PyQt5.QtCore import Qt
 
+from pugdebug.gui.breakpoints import PugdebugBreakpointViewer
+from pugdebug.gui.documents import PugdebugDocumentViewer
 from pugdebug.gui.file_browser import PugdebugFileBrowser
 from pugdebug.gui.settings import PugdebugSettingsWindow
-from pugdebug.gui.workarea import PugdebugWorkareaWindow
+from pugdebug.gui.stacktraces import PugdebugStacktraceViewer
+from pugdebug.gui.variables import PugdebugVariableViewer
 
 
 class PugdebugMainWindow(QMainWindow):
@@ -23,44 +27,55 @@ class PugdebugMainWindow(QMainWindow):
         super(PugdebugMainWindow, self).__init__()
         self.setObjectName("pugdebug")
         self.setWindowTitle("pugdebug")
-
-        self.central_widget_layout = QGridLayout()
-
-        self.central_widget = QWidget(self)
-        self.central_widget.setLayout(self.central_widget_layout)
-
-        self.setCentralWidget(self.central_widget)
-
         self.setup_gui_elements()
 
     def setup_gui_elements(self):
-        self.setup_fonts()
-        self.setup_file_browser_window()
-        self.setup_settings_window()
-
-        self.setup_workarea_window()
-
         self.setup_toolbar()
+        self.setup_fonts()
+        self.setup_components()
+        self.setup_main_window()
 
         self.set_statusbar_text("Idle...")
+
+    def setup_components(self):
+        self.document_viewer = PugdebugDocumentViewer()
+        self.file_browser = PugdebugFileBrowser()
+        self.stacktrace_viewer = PugdebugStacktraceViewer()
+        self.breakpoint_viewer = PugdebugBreakpointViewer()
+        self.variable_viewer = PugdebugVariableViewer()
+        self.settings_window = PugdebugSettingsWindow(self)
+
+    def setup_main_window(self):
+        """ Sets up the central and dockable widgets on the main window.
+        """
+
+        self.setCentralWidget(self.document_viewer)
+
+        dw = QDockWidget("File Browser", self)
+        dw.setWidget(self.file_browser)
+        self.addDockWidget(Qt.LeftDockWidgetArea, dw)
+
+        dw = QDockWidget("Stack Traces", self)
+        dw.setWidget(self.stacktrace_viewer)
+        self.addDockWidget(Qt.RightDockWidgetArea, dw)
+
+        dw = QDockWidget("Breakpoints", self)
+        dw.setWidget(self.breakpoint_viewer)
+        self.addDockWidget(Qt.RightDockWidgetArea, dw)
+
+        dw = QDockWidget("Variables", self)
+        dw.setWidget(self.variable_viewer)
+        self.addDockWidget(Qt.RightDockWidgetArea, dw)
+
+        dw = QDockWidget("Settings", self)
+        dw.setWidget(self.settings_window)
+        self.addDockWidget(Qt.LeftDockWidgetArea, dw)
 
     def setup_fonts(self):
         font = QFont('mono')
         font.setStyleHint(QFont.Monospace)
         font.setPixelSize(12)
         self.setFont(font)
-
-    def setup_workarea_window(self):
-        self.workarea_window = PugdebugWorkareaWindow(self)
-        self.central_widget_layout.addWidget(self.workarea_window, 0, 1, 2, 1)
-
-    def setup_file_browser_window(self):
-        self.file_browser = PugdebugFileBrowser()
-        self.central_widget_layout.addWidget(self.file_browser, 0, 0, 1, 1)
-
-    def setup_settings_window(self):
-        self.settings_window = PugdebugSettingsWindow(self)
-        self.central_widget_layout.addWidget(self.settings_window, 1, 0, 1, 2)
 
     def setup_toolbar(self):
         toolbar = QToolBar()
@@ -91,13 +106,13 @@ class PugdebugMainWindow(QMainWindow):
         return self.settings_window
 
     def get_document_viewer(self):
-        return self.workarea_window.get_document_viewer()
+        return self.document_viewer
 
     def get_variable_viewer(self):
-        return self.workarea_window.get_variable_viewer()
+        return self.variable_viewer
 
     def get_breakpoint_viewer(self):
-        return self.workarea_window.get_breakpoint_viewer()
+        return self.breakpoint_viewer
 
     def set_statusbar_text(self, text):
         self.statusBar().showMessage(text)
